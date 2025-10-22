@@ -15,22 +15,43 @@
             text-align: center;
         }
         #game {
-            max-width: 800px;
             margin: 0 auto;
             border: 2px solid #0f0;
             padding: 20px;
             background-color: #111;
+            overflow-x: auto; /* Horizontal scroll if content overflows */
         }
         #stats {
-            display: flex;
-            justify-content: space-around;
+            display: block; /* Block for scrollable container */
+            white-space: nowrap; /* Keep stats in a single row */
+            overflow-x: auto; /* Horizontal scroll for all stats */
+            padding-bottom: 10px; /* Ensure scroll bar visibility */
             margin-bottom: 20px;
         }
         .stat {
             background-color: #222;
-            padding: 10px;
+            padding: 5px; /* Reduced padding for vertical space */
             border: 1px solid #0f0;
-            width: 150px;
+            display: inline-block; /* Horizontal layout */
+            min-width: 120px; /* Minimum width for readability */
+            max-width: 150px; /* Cap width */
+            vertical-align: top; /* Align tops of stat boxes */
+            margin-right: 10px; /* Space between stats */
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .stat-label {
+            font-size: 12px; /* Smaller font for label to save space */
+            display: block; /* Stack label on its own line */
+            text-align: left; /* Left-align for clarity */
+            overflow: hidden; /* Hide overflow if too long */
+            text-overflow: ellipsis; /* Add ellipsis if truncated */
+        }
+        .stat-value {
+            font-size: 14px; /* Slightly larger font for value */
+            display: block; /* Stack value on its own line */
+            text-align: right; /* Right-align for numbers */
+            overflow: hidden; /* Hide overflow if too long */
+            text-overflow: ellipsis; /* Add ellipsis if truncated */
         }
         #progress {
             margin-bottom: 20px;
@@ -52,6 +73,8 @@
             background-color: #222;
             padding: 10px;
             border: 1px solid #0f0;
+            overflow-y: auto;
+            max-height: 200px;
         }
         button {
             font-family: 'Press Start 2P', cursive;
@@ -61,6 +84,7 @@
             padding: 10px 20px;
             margin: 5px;
             cursor: pointer;
+            white-space: nowrap;
         }
         button:hover {
             background-color: #ff0;
@@ -89,21 +113,28 @@
         </div>
         <div id="game-screen">
             <h1>Powerline Construction Simulator</h1>
-            <div id="stats"></div>
+            <div id="stats">
+                <div class="stat"><span class="stat-label">Budget:</span><span class="stat-value">$${project.resources.budget.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Morale:</span><span class="stat-value">${project.resources.morale.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Fuel:</span><span class="stat-value">${project.resources.fuel.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Materials:</span><span class="stat-value">${project.resources.materials.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Days:</span><span class="stat-value">${project.days}/${project.timeLimit}</span></div>
+                <div class="stat"><span class="stat-label">Weather:</span><span class="stat-value">${project.weather}</span></div>
+                <div class="stat"><span class="stat-label">Terrain:</span><span class="stat-value">${project.terrain}</span></div>
+                <div class="stat"><span class="stat-label">Stage:</span><span class="stat-value">${project.stage}</span></div>
+            </div>
             <div id="progress">
                 <div>Progress: <span id="progress-text">0/500 miles</span></div>
                 <div id="progress-bar"><div id="progress-fill"></div></div>
             </div>
             <div id="map">
-                <!-- Simple SVG placeholder for map/terrain -->
                 <svg viewBox="0 0 500 100">
-                    <rect x="0" y="0" width="100" height="100" fill="#c2b280" /> <!-- Desert -->
+                    <rect x="0" y="0" width="100" height="100" fill="#c2b280" />
                     <text x="50" y="50" fill="#000" font-size="12">Desert</text>
-                    <rect x="100" y="0" width="200" height="100" fill="#228b22" /> <!-- Forest -->
+                    <rect x="100" y="0" width="200" height="100" fill="#228b22" />
                     <text x="200" y="50" fill="#fff" font-size="12">Forest</text>
-                    <rect x="300" y="0" width="200" height="100" fill="#a9a9a9" /> <!-- Mountains -->
+                    <rect x="300" y="0" width="200" height="100" fill="#a9a9a9" />
                     <text x="400" y="50" fill="#000" font-size="12">Mountains</text>
-                    <!-- Placeholder tower -->
                     <line x1="0" y1="100" x2="500" y2="100" stroke="#fff" stroke-width="2" />
                     <rect id="tower-position" x="0" y="80" width="10" height="20" fill="#f00" />
                 </svg>
@@ -115,10 +146,10 @@
     <script>
         class Project {
             constructor() {
-                this.progress = 0; // miles
+                this.progress = 0;
                 this.totalMiles = 500;
                 this.days = 0;
-                this.timeLimit = 180; // days before winter
+                this.timeLimit = 180;
                 this.stage = 'Planning';
                 this.stages = ['Planning', 'Mobilization', 'Construction', 'Energization'];
                 this.currentStageIndex = 0;
@@ -128,7 +159,7 @@
                     fuel: 1000,
                     materials: 500
                 };
-                this.weather = 'Clear'; // Clear, Stormy, Windy
+                this.weather = 'Clear';
                 this.terrain = this.getTerrain();
             }
 
@@ -142,7 +173,7 @@
             advanceDay() {
                 this.days++;
                 this.updateWeather();
-                const baseBuild = 3 + Math.random() * 2; // 3-5 miles/day base
+                const baseBuild = 3 + Math.random() * 2;
                 let modifier = 1;
                 if (this.terrain === 'Forest') modifier = 0.8;
                 if (this.terrain === 'Mountains') modifier = 0.6;
@@ -152,16 +183,13 @@
                 this.progress += baseBuild * modifier;
                 if (this.progress > this.totalMiles) this.progress = this.totalMiles;
 
-                // Consume resources
                 this.resources.fuel -= 20 + Math.random() * 10;
                 this.resources.materials -= 5 + Math.random() * 5;
                 this.resources.morale -= 1 + Math.random() * 2;
-                this.resources.budget -= 5000; // daily cost
+                this.resources.budget -= 5000;
 
-                // Update terrain
                 this.terrain = this.getTerrain();
 
-                // Advance stage every 125 miles
                 const stageProgress = Math.floor(this.progress / 125);
                 if (stageProgress > this.currentStageIndex) {
                     this.currentStageIndex = stageProgress;
@@ -212,7 +240,7 @@
                         choices: [
                             { text: 'Give rest day (lose 1 day, +20 morale)', effects: { days: 1, morale: 20 } },
                             { text: 'Push through (morale -10, 20% mutiny risk)', effects: () => {
-                                if (Math.random() < 0.2) return { morale: -100 }; // mutiny
+                                if (Math.random() < 0.2) return { morale: -100 };
                                 return { morale: -10 };
                             }}
                         ]
@@ -277,7 +305,6 @@
                             }}
                         ]
                     },
-                    // New events with industry humor
                     {
                         description: 'Your lineman "Sparky" insists on using his lucky wrench, but it’s slowing down the crew.',
                         choices: [
@@ -318,12 +345,326 @@
                                 return {};
                             }}
                         ]
+                    },
+                    {
+                        description: 'A crew member has dysentery! Must be that questionable camp water. Just like the old trail, but with voltage.',
+                        choices: [
+                            { text: 'Quarantine and treat ($10k, lose 1 day)', effects: { budget: -10000, days: 1 } },
+                            { text: 'Push on (50% chance it spreads, -20 morale)', effects: () => {
+                                if (Math.random() < 0.5) return { morale: -20, days: 2 };
+                                return { morale: -10 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Snakes on the line! A rattler bit a lineman while stringing wire. Who knew powerlines attract reptiles?',
+                        choices: [
+                            { text: 'Evacuate for antivenom (lose 2 days, -5 morale)', effects: { days: 2, morale: -5 } },
+                            { text: 'Treat on site ($5k, 30% complication risk)', effects: () => {
+                                if (Math.random() < 0.3) return { budget: -5000, morale: -10 };
+                                return { budget: -5000 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'A rogue cow herd trampled your materials stash. Time to act!',
+                        choices: [
+                            { text: 'Chase them off (lose 1 day, -5 morale)', effects: { days: 1, morale: -5 } },
+                            { text: 'Order replacements ($20k)', effects: { budget: -20000 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew’s radio is stuck on polka music, driving them nuts.',
+                        choices: [
+                            { text: 'Replace it ($1k, +5 morale)', effects: { budget: -1000, morale: 5 } },
+                            { text: 'Endure it (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A power surge fried your generator. Uh-oh!',
+                        choices: [
+                            { text: 'Repair it ($15k)', effects: { budget: -15000 } },
+                            { text: 'Borrow from neighbors (lose 2 days)', effects: { days: 2 } }
+                        ]
+                    },
+                    {
+                        description: 'A local farmer demands payment for crossing his land.',
+                        choices: [
+                            { text: 'Pay up ($10k)', effects: { budget: -10000 } },
+                            { text: 'Negotiate (50% success, else -15 morale)', effects: () => {
+                                if (Math.random() < 0.5) return {};
+                                return { morale: -15 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Your crane operator’s lunchbox fell into the gearbox. Gross.',
+                        choices: [
+                            { text: 'Clean it ($5k, lose 1 day)', effects: { budget: -5000, days: 1 } },
+                            { text: 'Ignore it (20% breakdown risk)', effects: () => {
+                                if (Math.random() < 0.2) return { budget: -20000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'A heatwave hits the desert site, slowing everyone down.',
+                        choices: [
+                            { text: 'Provide water coolers ($5k, +10 morale)', effects: { budget: -5000, morale: 10 } },
+                            { text: 'Push through (-15 morale)', effects: { morale: -15 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew found an old gold vein near a tower. Tempting!',
+                        choices: [
+                            { text: 'Mine it (50% +$50k, 50% collapse -10k)', effects: () => {
+                                if (Math.random() < 0.5) return { budget: 50000 };
+                                return { budget: -10000 };
+                            }},
+                            { text: 'Stay focused', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'A rival crew sabotaged your fuel tank. Sneaky!',
+                        choices: [
+                            { text: 'Report it (lose 1 day)', effects: { days: 1 } },
+                            { text: 'Replace fuel ($20k)', effects: { budget: -20000 } }
+                        ]
+                    },
+                    {
+                        description: 'Your surveyor got lost in the mountains with the maps.',
+                        choices: [
+                            { text: 'Send a search party (lose 2 days)', effects: { days: 2 } },
+                            { text: 'Wait for him (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'A bear raided the camp kitchen, stealing food supplies.',
+                        choices: [
+                            { text: 'Replenish food ($10k, +5 morale)', effects: { budget: -10000, morale: 5 } },
+                            { text: 'Hunt the bear (30% success, else -10 morale)', effects: () => {
+                                if (Math.random() < 0.3) return { morale: 10 };
+                                return { morale: -10 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'The crew’s dog chewed through a cable spool.',
+                        choices: [
+                            { text: 'Replace it ($15k)', effects: { budget: -15000 } },
+                            { text: 'Repair it (lose 1 day, -5 morale)', effects: { days: 1, morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'A lightning strike damaged a tower. Safety first?',
+                        choices: [
+                            { text: 'Fix it now ($30k)', effects: { budget: -30000 } },
+                            { text: 'Patch it later (20% collapse risk)', effects: () => {
+                                if (Math.random() < 0.2) return { budget: -50000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'The crew demands a karaoke night to boost morale.',
+                        choices: [
+                            { text: 'Allow it (lose 1 day, +15 morale)', effects: { days: 1, morale: 15 } },
+                            { text: 'Ban it (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A flood washed out an access road. Urgent decision!',
+                        choices: [
+                            { text: 'Build a detour ($25k)', effects: { budget: -25000 } },
+                            { text: 'Wait it out (lose 3 days)', effects: { days: 3 } }
+                        ]
+                    },
+                    {
+                        description: 'Your helicopter pilot insists on a scenic detour.',
+                        choices: [
+                            { text: 'Let him (lose 1 day, +5 morale)', effects: { days: 1, morale: 5 } },
+                            { text: 'Stick to route (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A regulator questions your safety training records.',
+                        choices: [
+                            { text: 'Show fake records (30% fine $50k)', effects: () => {
+                                if (Math.random() < 0.3) return { budget: -50000 };
+                                return {};
+                            }},
+                            { text: 'Admit error (lose 2 days)', effects: { days: 2 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew’s morale tanked after a bad batch of chili.',
+                        choices: [
+                            { text: 'Hire a new cook ($5k, +10 morale)', effects: { budget: -5000, morale: 10 } },
+                            { text: 'Tough it out (-15 morale)', effects: { morale: -15 } }
+                        ]
+                    },
+                    {
+                        description: 'A UFO sighting spooked the night shift.',
+                        choices: [
+                            { text: 'Investigate (lose 1 day, +5 morale)', effects: { days: 1, morale: 5 } },
+                            { text: 'Dismiss it (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'Your fuel truck got a flat tire in the desert.',
+                        choices: [
+                            { text: 'Fix it ($5k)', effects: { budget: -5000 } },
+                            { text: 'Wait for help (lose 2 days)', effects: { days: 2 } }
+                        ]
+                    },
+                    {
+                        description: 'A rare bird nest delays construction.',
+                        choices: [
+                            { text: 'Relocate it ($20k)', effects: { budget: -20000 } },
+                            { text: 'Wait for permit (lose 3 days)', effects: { days: 3 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew’s prank war escalated with a greased tower.',
+                        choices: [
+                            { text: 'Break it up (lose 1 day, +5 morale)', effects: { days: 1, morale: 5 } },
+                            { text: 'Join in (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A sandstorm buried your equipment. Dig out?',
+                        choices: [
+                            { text: 'Dig out (lose 2 days)', effects: { days: 2 } },
+                            { text: 'Wait it out (lose 1 day, -5 morale)', effects: { days: 1, morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'Your accountant found a budgeting error.',
+                        choices: [
+                            { text: 'Fix it (lose 1 day)', effects: { days: 1 } },
+                            { text: 'Ignore it (20% audit risk)', effects: () => {
+                                if (Math.random() < 0.2) return { budget: -30000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'A crew member’s pet raccoon stole tools.',
+                        choices: [
+                            { text: 'Bribe it with food ($2k, +5 morale)', effects: { budget: -2000, morale: 5 } },
+                            { text: 'Chase it off (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A competitor offered to buy your materials.',
+                        choices: [
+                            { text: 'Sell (+$30k, lose 100 materials)', effects: { budget: 30000, materials: -100 } },
+                            { text: 'Refuse', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'The crew’s morale soared after a good joke.',
+                        choices: [
+                            { text: 'Encourage more (+10 morale)', effects: { morale: 10 } }
+                        ]
+                    },
+                    {
+                        description: 'A rockslide blocked the mountain pass.',
+                        choices: [
+                            { text: 'Clear it ($25k)', effects: { budget: -25000 } },
+                            { text: 'Find alternate route (lose 3 days)', effects: { days: 3 } }
+                        ]
+                    },
+                    {
+                        description: 'Your helicopter’s GPS failed mid-flight.',
+                        choices: [
+                            { text: 'Land and recalibrate (lose 1 day)', effects: { days: 1 } },
+                            { text: 'Fly blind (20% crash risk)', effects: () => {
+                                if (Math.random() < 0.2) return { budget: -50000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'A crew member started a rumor of buried treasure.',
+                        choices: [
+                            { text: 'Dig (50% +$20k, 50% -10k)', effects: () => {
+                                if (Math.random() < 0.5) return { budget: 20000 };
+                                return { budget: -10000 };
+                            }},
+                            { text: 'Stop it (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'The local bar offered free drinks to the crew.',
+                        choices: [
+                            { text: 'Allow it (lose 1 day, +15 morale)', effects: { days: 1, morale: 15 } },
+                            { text: 'Ban it (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A hailstorm dented your equipment.',
+                        choices: [
+                            { text: 'Repair it ($10k)', effects: { budget: -10000 } },
+                            { text: 'Use as is (30% failure risk)', effects: () => {
+                                if (Math.random() < 0.3) return { budget: -20000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'The crew demands a safety meeting after a near-miss.',
+                        choices: [
+                            { text: 'Hold it (lose 1 day, +10 morale)', effects: { days: 1, morale: 10 } },
+                            { text: 'Skip it (-15 morale)', effects: { morale: -15 } }
+                        ]
+                    },
+                    {
+                        description: 'A wildfire threatens the site.',
+                        choices: [
+                            { text: 'Evacuate (lose 2 days)', effects: { days: 2 } },
+                            { text: 'Fight it with crew ($20k, 50% success)', effects: () => {
+                                if (Math.random() < 0.5) return { budget: -20000 };
+                                return { budget: -20000, days: 1 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Your truck driver took a nap on the job.',
+                        choices: [
+                            { text: 'Wake him (lose 1 day)', effects: { days: 1 } },
+                            { text: 'Let him sleep (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'A journalist wants to interview the crew.',
+                        choices: [
+                            { text: 'Allow it (+10 morale)', effects: { morale: 10 } },
+                            { text: 'Decline (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew’s morale dropped after a long rain delay.',
+                        choices: [
+                            { text: 'Organize games (+15 morale, lose 1 day)', effects: { morale: 15, days: 1 } },
+                            { text: 'Push on (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A subcontractor overcharged for parts.',
+                        choices: [
+                            { text: 'Pay it ($30k)', effects: { budget: -30000 } },
+                            { text: 'Complain (50% refund, else -10 morale)', effects: () => {
+                                if (Math.random() < 0.5) return { budget: 15000 };
+                                return { morale: -10 };
+                            }}
+                        ]
                     }
                 ];
             }
 
             triggerRandomEvent() {
-                if (Math.random() < 0.4) { // 40% chance per day
+                if (Math.random() < 0.4) {
                     const event = this.events[Math.floor(Math.random() * this.events.length)];
                     return event;
                 }
@@ -334,19 +675,33 @@
                 if (typeof effects === 'function') {
                     effects = effects();
                 }
+                let outcomeMessage = 'Outcome: ';
                 for (const key in effects) {
                     if (key === 'days') {
                         this.project.days += effects[key];
+                        outcomeMessage += `Lost ${effects[key]} day(s), `;
                     } else if (key === 'progress') {
                         this.project.progress += effects[key];
+                        outcomeMessage += `Gained ${effects[key]} mile(s), `;
                     } else {
                         this.project.resources[key] += effects[key];
+                        outcomeMessage += `${key.charAt(0).toUpperCase() + key.slice(1)} changed by ${effects[key]}, `;
                     }
                 }
+                if (outcomeMessage !== 'Outcome: ') {
+                    outcomeMessage = outcomeMessage.slice(0, -2) + '.';
+                    const eventDiv = document.getElementById('event');
+                    setTimeout(() => {
+                        eventDiv.innerHTML += `<p>${outcomeMessage}</p>`;
+                        setTimeout(() => {
+                            document.getElementById('advance-button').style.display = 'block';
+                        }, 2000);
+                    }, 100);
+                }
+                return effects;
             }
         }
 
-        // Game setup
         const project = new Project();
         const eventManager = new EventManager(project);
         let currentEvent = null;
@@ -354,14 +709,14 @@
         function updateUI() {
             const statsDiv = document.getElementById('stats');
             statsDiv.innerHTML = `
-                <div class="stat">Budget: $${project.resources.budget.toFixed(0)}</div>
-                <div class="stat">Morale: ${project.resources.morale.toFixed(0)}</div>
-                <div class="stat">Fuel: ${project.resources.fuel.toFixed(0)}</div>
-                <div class="stat">Materials: ${project.resources.materials.toFixed(0)}</div>
-                <div class="stat">Days: ${project.days}/${project.timeLimit}</div>
-                <div class="stat">Weather: ${project.weather}</div>
-                <div class="stat">Terrain: ${project.terrain}</div>
-                <div class="stat">Stage: ${project.stage}</div>
+                <div class="stat"><span class="stat-label">Budget:</span><span class="stat-value">$${project.resources.budget.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Morale:</span><span class="stat-value">${project.resources.morale.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Fuel:</span><span class="stat-value">${project.resources.fuel.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Materials:</span><span class="stat-value">${project.resources.materials.toFixed(0)}</span></div>
+                <div class="stat"><span class="stat-label">Days:</span><span class="stat-value">${project.days}/${project.timeLimit}</span></div>
+                <div class="stat"><span class="stat-label">Weather:</span><span class="stat-value">${project.weather}</span></div>
+                <div class="stat"><span class="stat-label">Terrain:</span><span class="stat-value">${project.terrain}</span></div>
+                <div class="stat"><span class="stat-label">Stage:</span><span class="stat-value">${project.stage}</span></div>
             `;
 
             const progressText = document.getElementById('progress-text');
@@ -370,7 +725,6 @@
             const progressFill = document.getElementById('progress-fill');
             progressFill.style.width = `${(project.progress / project.totalMiles) * 100}%`;
 
-            // Update tower position on map
             const tower = document.getElementById('tower-position');
             tower.setAttribute('x', (project.progress / project.totalMiles) * 490);
 
@@ -432,13 +786,12 @@
         }
 
         function resetGame() {
-            location.reload(); // Simple reset
+            location.reload();
         }
 
         document.getElementById('start-button').onclick = startGame;
         document.getElementById('advance-button').onclick = advanceDay;
 
-        // Stretch: Save/Load
         function saveGame() {
             localStorage.setItem('powerlineGame', JSON.stringify({
                 project: {
@@ -468,10 +821,8 @@
             }
         }
 
-        // Call load on start
         loadGame();
 
-        // Save on advance (for MVP, save every advance)
         const originalAdvance = advanceDay;
         advanceDay = () => {
             originalAdvance();
