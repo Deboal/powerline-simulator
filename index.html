@@ -11,7 +11,7 @@
             background-color: #000;
             color: #0f0;
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* Reduced padding for mobile */
             text-align: center;
         }
         #game {
@@ -19,48 +19,46 @@
             border: 2px solid #0f0;
             padding: 20px;
             background-color: #111;
-            overflow-x: auto; /* Horizontal scroll if content overflows */
+            max-width: 100%; /* Full width on mobile */
         }
         #stats {
-            display: block; /* Block for scrollable container */
-            white-space: nowrap; /* Keep stats in a single row */
-            overflow-x: auto; /* Horizontal scroll for all stats */
-            padding-bottom: 10px; /* Ensure scroll bar visibility */
-            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column; /* Vertical stack on mobile */
+            gap: 5px; /* Reduced gap for mobile */
+            margin-bottom: 10px; /* Reduced margin */
+            width: 100%;
         }
         .stat {
             background-color: #222;
-            padding: 5px; /* Reduced padding for vertical space */
+            padding: 2px; /* Reduced padding */
             border: 1px solid #0f0;
-            display: inline-block; /* Horizontal layout */
-            min-width: 120px; /* Minimum width for readability */
-            max-width: 150px; /* Cap width */
-            vertical-align: top; /* Align tops of stat boxes */
-            margin-right: 10px; /* Space between stats */
-            box-sizing: border-box; /* Include padding in width */
+            display: block; /* Block for vertical layout */
+            min-width: 100px; /* Adjusted for mobile */
+            max-width: 100%; /* Full width on mobile */
+            box-sizing: border-box;
         }
         .stat-label {
-            font-size: 12px; /* Smaller font for label to save space */
-            display: block; /* Stack label on its own line */
-            text-align: left; /* Left-align for clarity */
-            overflow: hidden; /* Hide overflow if too long */
-            text-overflow: ellipsis; /* Add ellipsis if truncated */
+            font-size: 10px; /* Smaller font for mobile */
+            display: block;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .stat-value {
-            font-size: 14px; /* Slightly larger font for value */
-            display: block; /* Stack value on its own line */
-            text-align: right; /* Right-align for numbers */
-            overflow: hidden; /* Hide overflow if too long */
-            text-overflow: ellipsis; /* Add ellipsis if truncated */
+            font-size: 12px; /* Adjusted font size */
+            display: block;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #progress {
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Reduced margin */
         }
         #progress-bar {
             width: 100%;
             background-color: #333;
             border: 1px solid #0f0;
-            height: 20px;
+            height: 15px; /* Reduced height */
         }
         #progress-fill {
             height: 100%;
@@ -68,39 +66,89 @@
             width: 0%;
         }
         #event {
-            margin-bottom: 20px;
-            min-height: 100px;
+            margin-bottom: 10px; /* Reduced margin */
+            min-height: 80px; /* Reduced height */
             background-color: #222;
-            padding: 10px;
+            padding: 5px; /* Reduced padding */
             border: 1px solid #0f0;
             overflow-y: auto;
-            max-height: 200px;
+            max-height: 80px; /* Reduced max height */
         }
         button {
             font-family: 'Press Start 2P', cursive;
             background-color: #0f0;
             color: #000;
             border: none;
-            padding: 10px 20px;
-            margin: 5px;
+            padding: 5px 10px; /* Reduced padding */
+            margin: 2px; /* Reduced margin */
             cursor: pointer;
             white-space: nowrap;
+            font-size: 12px; /* Reduced font size */
         }
         button:hover {
             background-color: #ff0;
         }
         #map {
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Reduced margin */
+            height: 100px; /* Reduced height for mobile */
         }
         svg {
             width: 100%;
-            height: 200px;
+            height: 100%;
         }
         #start-screen {
             display: block;
         }
         #game-screen {
             display: none;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            #stats {
+                flex-direction: column; /* Ensure vertical on mobile */
+            }
+            .stat {
+                min-width: 100%; /* Full width on mobile */
+                max-width: 100%;
+            }
+            #map {
+                height: 100px; /* Fixed height for mobile */
+            }
+            #event {
+                min-height: 80px;
+                max-height: 80px;
+            }
+            button {
+                width: 100%; /* Full width button on mobile */
+            }
+        }
+
+        /* Desktop-specific styles */
+        @media (min-width: 769px) {
+            #stats {
+                flex-direction: row; /* Horizontal on desktop */
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+            .stat {
+                min-width: 120px;
+                max-width: 150px;
+                display: inline-block;
+            }
+            #game {
+                max-width: 800px; /* Restore desktop max-width */
+            }
+            #map {
+                height: 200px; /* Restore desktop height */
+            }
+            #event {
+                min-height: 100px;
+                max-height: 200px;
+            }
+            button {
+                width: auto; /* Restore auto width on desktop */
+            }
         }
     </style>
 </head>
@@ -161,6 +209,7 @@
                 };
                 this.weather = 'Clear';
                 this.terrain = this.getTerrain();
+                this.currentDepotIndex = 0;
             }
 
             getTerrain() {
@@ -210,6 +259,24 @@
                 if (this.resources.fuel < 0 || this.resources.materials < 0) return 'lose-resources';
                 if (this.days > this.timeLimit) return 'lose-time';
                 if (this.progress >= this.totalMiles) return 'win';
+                return null;
+            }
+
+            checkForDepot() {
+                const depotMiles = [100, 200, 300, 400];
+                if (this.currentDepotIndex < depotMiles.length && this.progress >= depotMiles[this.currentDepotIndex]) {
+                    const depotEvent = {
+                        description: 'Reached Supply Depot! Purchase resources?',
+                        choices: [
+                            { text: 'Buy 500 fuel ($10k)', effects: { budget: -10000, fuel: 500 } },
+                            { text: 'Buy 200 materials ($20k)', effects: { budget: -20000, materials: 200 } },
+                            { text: 'Buy both ($30k)', effects: { budget: -30000, fuel: 500, materials: 200 } },
+                            { text: 'Skip', effects: {} }
+                        ]
+                    };
+                    this.currentDepotIndex++;
+                    return depotEvent;
+                }
                 return null;
             }
         }
@@ -659,6 +726,201 @@
                                 return { morale: -10 };
                             }}
                         ]
+                    },
+                    // Scope change events
+                    {
+                        description: 'Client proposes scope expansion for additional funding.',
+                        choices: [
+                            { text: 'Accept (+$100k, +50 miles)', effects: () => {
+                                this.project.totalMiles += 50;
+                                return { budget: 100000 };
+                            }},
+                            { text: 'Decline', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'Change order approved: extra budget granted!',
+                        choices: [
+                            { text: 'Accept (+$50k, +2 days limit)', effects: () => {
+                                this.project.timeLimit += 2;
+                                return { budget: 50000 };
+                            }},
+                            { text: 'Decline', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'Regulatory change allows for budget increase.',
+                        choices: [
+                            { text: 'Take advantage (+$75k)', effects: { budget: 75000 } }
+                        ]
+                    },
+                    // White Monster energy drinks scenarios
+                    {
+                        description: 'The crew finds a cache of White Monster energy drinks in an abandoned truck. Energy boost time?',
+                        choices: [
+                            { text: 'Distribute them (+15 morale, 50% hyperactivity accident -10k)', effects: () => {
+                                if (Math.random() < 0.5) return { morale: 15, budget: -10000 };
+                                return { morale: 15 };
+                            }},
+                            { text: 'Save for later (+5 morale)', effects: { morale: 5 } }
+                        ]
+                    },
+                    {
+                        description: 'A lineman chugs too much White Monster and starts "flying" the helicopter like a pro... or not.',
+                        choices: [
+                            { text: 'Let him buzz (+5 progress, 30% crash -20k)', effects: () => {
+                                if (Math.random() < 0.3) return { progress: 5, budget: -20000 };
+                                return { progress: 5 };
+                            }},
+                            { text: 'Ground him (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'White Monster spill makes the tools sticky. Crew is slipping everywhere!',
+                        choices: [
+                            { text: 'Clean up (lose 1 day)', effects: { days: 1 } },
+                            { text: 'Ignore (50% injury -10 morale)', effects: () => {
+                                if (Math.random() < 0.5) return { morale: -10 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Crew demands White Monster for the night shift or they’ll "monster out."',
+                        choices: [
+                            { text: 'Buy a case ($5k, +10 morale)', effects: { budget: -5000, morale: 10 } },
+                            { text: 'No caffeine after 5 (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A White Monster-fueled prank war erupts: towers painted neon green!',
+                        choices: [
+                            { text: 'Join the fun (+10 morale, lose 1 day)', effects: { morale: 10, days: 1 } },
+                            { text: 'Stop the madness (-15 morale)', effects: { morale: -15 } }
+                        ]
+                    },
+                    {
+                        description: 'White Monster gives the crew super speed, but they’re jittery as hell.',
+                        choices: [
+                            { text: 'Harness the energy (+3 progress, 40% error -5k)', effects: () => {
+                                if (Math.random() < 0.4) return { progress: 3, budget: -5000 };
+                                return { progress: 3 };
+                            }},
+                            { text: 'Switch to water (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'Found expired White Monster. Drink or ditch?',
+                        choices: [
+                            { text: 'Risk it (50% +10 morale, 50% sick -2 days)', effects: () => {
+                                if (Math.random() < 0.5) return { morale: 10 };
+                                return { days: 2 };
+                            }},
+                            { text: 'Ditch it', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'White Monster vending machine appears in the desert. Mirage or miracle?',
+                        choices: [
+                            { text: 'Stock up ($10k, +15 morale)', effects: { budget: -10000, morale: 15 } },
+                            { text: 'Ignore the hallucination (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    // Zyn nicotine pouches scenarios
+                    {
+                        description: 'Crew runs out of Zyn pouches and starts getting cranky.',
+                        choices: [
+                            { text: 'Buy more ($5k, +10 morale)', effects: { budget: -5000, morale: 10 } },
+                            { text: 'Tell them to quit (-15 morale)', effects: { morale: -15 } }
+                        ]
+                    },
+                    {
+                        description: 'A Zyn pouch falls into the cement mixer. Now it’s "nicotine concrete"!',
+                        choices: [
+                            { text: 'Scrap the batch ($10k)', effects: { budget: -10000 } },
+                            { text: 'Use it anyway (50% crack -20k)', effects: () => {
+                                if (Math.random() < 0.5) return { budget: -20000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Lineman on Zyn buzz climbs tower too fast, forgets safety harness.',
+                        choices: [
+                            { text: 'Yell at him (-10 morale)', effects: { morale: -10 } },
+                            { text: 'Praise the speed (+5 morale, 30% fall -10k)', effects: () => {
+                                if (Math.random() < 0.3) return { morale: 5, budget: -10000 };
+                                return { morale: 5 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Zyn pouches make the crew "zyn-sync" – super focused but twitchy.',
+                        choices: [
+                            { text: 'Encourage it (+5 progress)', effects: { progress: 5 } },
+                            { text: 'Ban Zyn (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'Someone mistakes Zyn for mints and hands them out to regulators.',
+                        choices: [
+                            { text: 'Laugh it off (+5 morale, 50% fine -15k)', effects: () => {
+                                if (Math.random() < 0.5) return { morale: 5, budget: -15000 };
+                                return { morale: 5 };
+                            }},
+                            { text: 'Apologize (-5 morale)', effects: { morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'Zyn overdose: crew member thinks he’s invincible, tries to arm-wrestle a bear.',
+                        choices: [
+                            { text: 'Intervene (lose 1 day)', effects: { days: 1 } },
+                            { text: 'Let nature take its course (40% morale boost from story, else -10 morale)', effects: () => {
+                                if (Math.random() < 0.4) return { morale: 10 };
+                                return { morale: -10 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Found a stash of Zyn in the forest. Nicotine fairy?',
+                        choices: [
+                            { text: 'Distribute (+10 morale)', effects: { morale: 10 } },
+                            { text: 'Suspect poison (skip)', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'Zyn pouches freeze in mountains, turning into "ice zyns."',
+                        choices: [
+                            { text: 'Thaw them (lose 1 day, +5 morale)', effects: { days: 1, morale: 5 } },
+                            { text: 'Go without (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    // Scope change events (kept as is)
+                    {
+                        description: 'Client proposes scope expansion for additional funding.',
+                        choices: [
+                            { text: 'Accept (+$100k, +50 miles)', effects: () => {
+                                this.project.totalMiles += 50;
+                                return { budget: 100000 };
+                            }},
+                            { text: 'Decline', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'Change order approved: extra budget granted!',
+                        choices: [
+                            { text: 'Accept (+$50k, +2 days limit)', effects: () => {
+                                this.project.timeLimit += 2;
+                                return { budget: 50000 };
+                            }},
+                            { text: 'Decline', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'Regulatory change allows for budget increase.',
+                        choices: [
+                            { text: 'Take advantage (+$75k)', effects: { budget: 75000 } }
+                        ]
                     }
                 ];
             }
@@ -752,7 +1014,7 @@
 
         function advanceDay() {
             project.advanceDay();
-            currentEvent = eventManager.triggerRandomEvent();
+            currentEvent = project.checkForDepot() || eventManager.triggerRandomEvent();
             updateUI();
             checkGameOver();
         }
@@ -801,7 +1063,10 @@
                     currentStageIndex: project.currentStageIndex,
                     resources: project.resources,
                     weather: project.weather,
-                    terrain: project.terrain
+                    terrain: project.terrain,
+                    totalMiles: project.totalMiles,
+                    timeLimit: project.timeLimit,
+                    currentDepotIndex: project.currentDepotIndex
                 }
             }));
         }
@@ -817,6 +1082,9 @@
                 project.resources = data.project.resources;
                 project.weather = data.project.weather;
                 project.terrain = data.project.terrain;
+                project.totalMiles = data.project.totalMiles || 500;
+                project.timeLimit = data.project.timeLimit || 180;
+                project.currentDepotIndex = data.project.currentDepotIndex || 0;
                 updateUI();
             }
         }
