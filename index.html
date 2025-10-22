@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powerline Construction Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #000;
+            color: #0f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        #game {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #0f0;
+            padding: 20px;
+            background-color: #111;
+        }
+        #stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background-color: #222;
+            padding: 10px;
+            border: 1px solid #0f0;
+            width: 150px;
+        }
+        #progress {
+            margin-bottom: 20px;
+        }
+        #progress-bar {
+            width: 100%;
+            background-color: #333;
+            border: 1px solid #0f0;
+            height: 20px;
+        }
+        #progress-fill {
+            height: 100%;
+            background-color: #0f0;
+            width: 0%;
+        }
+        #event {
+            margin-bottom: 20px;
+            min-height: 100px;
+            background-color: #222;
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+        button {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ff0;
+        }
+        #map {
+            margin-bottom: 20px;
+        }
+        svg {
+            width: 100%;
+            height: 200px;
+        }
+        #start-screen {
+            display: block;
+        }
+        #game-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="start-screen">
+            <h1>Powerline Construction Simulator</h1>
+            <p>Build a 500-mile powerline across challenging terrain. Manage your resources wisely!</p>
+            <button id="start-button">Start Project</button>
+        </div>
+        <div id="game-screen">
+            <h1>Powerline Construction Simulator</h1>
+            <div id="stats"></div>
+            <div id="progress">
+                <div>Progress: <span id="progress-text">0/500 miles</span></div>
+                <div id="progress-bar"><div id="progress-fill"></div></div>
+            </div>
+            <div id="map">
+                <!-- Simple SVG placeholder for map/terrain -->
+                <svg viewBox="0 0 500 100">
+                    <rect x="0" y="0" width="100" height="100" fill="#c2b280" /> <!-- Desert -->
+                    <text x="50" y="50" fill="#000" font-size="12">Desert</text>
+                    <rect x="100" y="0" width="200" height="100" fill="#228b22" /> <!-- Forest -->
+                    <text x="200" y="50" fill="#fff" font-size="12">Forest</text>
+                    <rect x="300" y="0" width="200" height="100" fill="#a9a9a9" /> <!-- Mountains -->
+                    <text x="400" y="50" fill="#000" font-size="12">Mountains</text>
+                    <!-- Placeholder tower -->
+                    <line x1="0" y1="100" x2="500" y2="100" stroke="#fff" stroke-width="2" />
+                    <rect id="tower-position" x="0" y="80" width="10" height="20" fill="#f00" />
+                </svg>
+            </div>
+            <div id="event"></div>
+            <button id="advance-button">Advance Day</button>
+        </div>
+    </div>
+    <script>
+        class Project {
+            constructor() {
+                this.progress = 0; // miles
+                this.totalMiles = 500;
+                this.days = 0;
+                this.timeLimit = 180; // days before winter
+                this.stage = 'Planning';
+                this.stages = ['Planning', 'Mobilization', 'Construction', 'Energization'];
+                this.currentStageIndex = 0;
+                this.resources = {
+                    budget: 1000000,
+                    morale: 100,
+                    fuel: 1000,
+                    materials: 500
+                };
+                this.weather = 'Clear'; // Clear, Stormy, Windy
+                this.terrain = this.getTerrain();
+            }
+
+            getTerrain() {
+                const percent = this.progress / this.totalMiles;
+                if (percent < 0.2) return 'Desert';
+                if (percent < 0.6) return 'Forest';
+                return 'Mountains';
+            }
+
+            advanceDay() {
+                this.days++;
+                this.updateWeather();
+                const baseBuild = 3 + Math.random() * 2; // 3-5 miles/day base
+                let modifier = 1;
+                if (this.terrain === 'Forest') modifier = 0.8;
+                if (this.terrain === 'Mountains') modifier = 0.6;
+                if (this.weather === 'Stormy') modifier *= 0.5;
+                if (this.weather === 'Windy') modifier *= 0.7;
+                if (this.resources.morale < 50) modifier *= 0.8;
+                this.progress += baseBuild * modifier;
+                if (this.progress > this.totalMiles) this.progress = this.totalMiles;
+
+                // Consume resources
+                this.resources.fuel -= 20 + Math.random() * 10;
+                this.resources.materials -= 5 + Math.random() * 5;
+                this.resources.morale -= 1 + Math.random() * 2;
+                this.resources.budget -= 5000; // daily cost
+
+                // Update terrain
+                this.terrain = this.getTerrain();
+
+                // Advance stage every 125 miles
+                const stageProgress = Math.floor(this.progress / 125);
+                if (stageProgress > this.currentStageIndex) {
+                    this.currentStageIndex = stageProgress;
+                    this.stage = this.stages[Math.min(stageProgress, this.stages.length - 1)];
+                }
+            }
+
+            updateWeather() {
+                const rand = Math.random();
+                if (rand < 0.2) this.weather = 'Stormy';
+                else if (rand < 0.5) this.weather = 'Windy';
+                else this.weather = 'Clear';
+            }
+
+            checkWinLose() {
+                if (this.resources.budget < 0) return 'lose-budget';
+                if (this.resources.morale < 0) return 'lose-morale';
+                if (this.resources.fuel < 0 || this.resources.materials < 0) return 'lose-resources';
+                if (this.days > this.timeLimit) return 'lose-time';
+                if (this.progress >= this.totalMiles) return 'win';
+                return null;
+            }
+        }
+
+        class EventManager {
+            constructor(project) {
+                this.project = project;
+                this.events = [
+                    {
+                        description: 'A storm has grounded your helicopters. What do you do?',
+                        choices: [
+                            { text: 'Wait it out (lose 2 days)', effects: { days: 2, morale: 5 } },
+                            { text: 'Pay for overtime ($10k, morale -10)', effects: { budget: -10000, morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'A subcontractor damaged a structure. Repair now?',
+                        choices: [
+                            { text: 'Repair ($50k)', effects: { budget: -50000 } },
+                            { text: 'Risk citation (50% chance $100k fine)', effects: () => {
+                                if (Math.random() < 0.5) return { budget: -100000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Crew morale is dropping after long rotations.',
+                        choices: [
+                            { text: 'Give rest day (lose 1 day, +20 morale)', effects: { days: 1, morale: 20 } },
+                            { text: 'Push through (morale -10, 20% mutiny risk)', effects: () => {
+                                if (Math.random() < 0.2) return { morale: -100 }; // mutiny
+                                return { morale: -10 };
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Supply delay: materials arriving late.',
+                        choices: [
+                            { text: 'Buy expedited ($20k)', effects: { budget: -20000 } },
+                            { text: 'Wait (lose 3 days)', effects: { days: 3 } }
+                        ]
+                    },
+                    {
+                        description: 'Equipment breakdown on a tower.',
+                        choices: [
+                            { text: 'Repair immediately ($30k)', effects: { budget: -30000 } },
+                            { text: 'Delay work (lose 2 days, -5 morale)', effects: { days: 2, morale: -5 } }
+                        ]
+                    },
+                    {
+                        description: 'Good weather ahead! Bonus progress.',
+                        choices: [
+                            { text: 'Take advantage (+5 miles)', effects: { progress: 5 } }
+                        ]
+                    },
+                    {
+                        description: 'Regulator visits site. A Chinook crew demands hazard pay for flying in high winds.',
+                        choices: [
+                            { text: 'Pay them ($15k, +10 morale)', effects: { budget: -15000, morale: 10 } },
+                            { text: 'Refuse (20% strike risk)', effects: () => {
+                                if (Math.random() < 0.2) return { morale: -50 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'Wildlife issue blocking access road.',
+                        choices: [
+                            { text: 'Relocate ($25k)', effects: { budget: -25000 } },
+                            { text: 'Wait for clearance (lose 4 days)', effects: { days: 4 } }
+                        ]
+                    },
+                    {
+                        description: 'Found a potential shortcut through rough terrain.',
+                        choices: [
+                            { text: 'Take it (50% +10 miles, 50% accident -20k -10 morale)', effects: () => {
+                                if (Math.random() < 0.5) return { progress: 10 };
+                                return { budget: -20000, morale: -10 };
+                            }},
+                            { text: 'Stick to plan', effects: {} }
+                        ]
+                    },
+                    {
+                        description: 'A regulator visits your site. Do you show them everything, or hope they don’t ask about your unpermitted access road?',
+                        choices: [
+                            { text: 'Show everything (30% fine $50k)', effects: () => {
+                                if (Math.random() < 0.3) return { budget: -50000 };
+                                return {};
+                            }},
+                            { text: 'Hide it (10% big fine $200k)', effects: () => {
+                                if (Math.random() < 0.1) return { budget: -200000 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    // New events with industry humor
+                    {
+                        description: 'Your lineman "Sparky" insists on using his lucky wrench, but it’s slowing down the crew.',
+                        choices: [
+                            { text: 'Let Sparky keep his wrench (+5 morale, lose 1 day)', effects: { morale: 5, days: 1 } },
+                            { text: 'Swap it for a standard tool (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew found a "haunted" tower site and refuses to work until it’s blessed by a local shaman.',
+                        choices: [
+                            { text: 'Hire the shaman ($5k, +10 morale)', effects: { budget: -5000, morale: 10 } },
+                            { text: 'Tell them to get back to work (30% morale drop)', effects: () => {
+                                if (Math.random() < 0.3) return { morale: -20 };
+                                return {};
+                            }}
+                        ]
+                    },
+                    {
+                        description: 'A rookie operator parked the crane in a swamp. It’s stuck, and the crew is laughing too hard to help.',
+                        choices: [
+                            { text: 'Hire a tow ($15k)', effects: { budget: -15000 } },
+                            { text: 'Wait for crew to stop laughing (lose 2 days, +5 morale)', effects: { days: 2, morale: 5 } }
+                        ]
+                    },
+                    {
+                        description: 'Your surveyor swears he saw Bigfoot, delaying mapping. The crew is spooked.',
+                        choices: [
+                            { text: 'Send a team to investigate (lose 1 day, +5 morale)', effects: { days: 1, morale: 5 } },
+                            { text: 'Ignore it and push on (-10 morale)', effects: { morale: -10 } }
+                        ]
+                    },
+                    {
+                        description: 'The crew’s coffee machine broke, and they’re threatening a sit-in until it’s fixed.',
+                        choices: [
+                            { text: 'Buy a new machine ($2k, +15 morale)', effects: { budget: -2000, morale: 15 } },
+                            { text: 'Tell them to drink instant (40% morale drop)', effects: () => {
+                                if (Math.random() < 0.4) return { morale: -25 };
+                                return {};
+                            }}
+                        ]
+                    }
+                ];
+            }
+
+            triggerRandomEvent() {
+                if (Math.random() < 0.4) { // 40% chance per day
+                    const event = this.events[Math.floor(Math.random() * this.events.length)];
+                    return event;
+                }
+                return null;
+            }
+
+            applyEffects(effects) {
+                if (typeof effects === 'function') {
+                    effects = effects();
+                }
+                for (const key in effects) {
+                    if (key === 'days') {
+                        this.project.days += effects[key];
+                    } else if (key === 'progress') {
+                        this.project.progress += effects[key];
+                    } else {
+                        this.project.resources[key] += effects[key];
+                    }
+                }
+            }
+        }
+
+        // Game setup
+        const project = new Project();
+        const eventManager = new EventManager(project);
+        let currentEvent = null;
+
+        function updateUI() {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div class="stat">Budget: $${project.resources.budget.toFixed(0)}</div>
+                <div class="stat">Morale: ${project.resources.morale.toFixed(0)}</div>
+                <div class="stat">Fuel: ${project.resources.fuel.toFixed(0)}</div>
+                <div class="stat">Materials: ${project.resources.materials.toFixed(0)}</div>
+                <div class="stat">Days: ${project.days}/${project.timeLimit}</div>
+                <div class="stat">Weather: ${project.weather}</div>
+                <div class="stat">Terrain: ${project.terrain}</div>
+                <div class="stat">Stage: ${project.stage}</div>
+            `;
+
+            const progressText = document.getElementById('progress-text');
+            progressText.textContent = `${project.progress.toFixed(0)}/500 miles`;
+
+            const progressFill = document.getElementById('progress-fill');
+            progressFill.style.width = `${(project.progress / project.totalMiles) * 100}%`;
+
+            // Update tower position on map
+            const tower = document.getElementById('tower-position');
+            tower.setAttribute('x', (project.progress / project.totalMiles) * 490);
+
+            const eventDiv = document.getElementById('event');
+            eventDiv.innerHTML = '';
+            const advanceButton = document.getElementById('advance-button');
+            advanceButton.style.display = 'block';
+
+            if (currentEvent) {
+                advanceButton.style.display = 'none';
+                eventDiv.innerHTML = `<p>${currentEvent.description}</p>`;
+                currentEvent.choices.forEach((choice, index) => {
+                    const btn = document.createElement('button');
+                    btn.textContent = choice.text;
+                    btn.onclick = () => {
+                        eventManager.applyEffects(choice.effects);
+                        currentEvent = null;
+                        updateUI();
+                        checkGameOver();
+                    };
+                    eventDiv.appendChild(btn);
+                });
+            }
+        }
+
+        function advanceDay() {
+            project.advanceDay();
+            currentEvent = eventManager.triggerRandomEvent();
+            updateUI();
+            checkGameOver();
+        }
+
+        function checkGameOver() {
+            const result = project.checkWinLose();
+            if (result) {
+                const eventDiv = document.getElementById('event');
+                let message = '';
+                if (result === 'win') {
+                    message = `Success! You completed the powerline in ${project.days} days with $${project.resources.budget} left.`;
+                } else if (result === 'lose-budget') {
+                    message = 'Game Over: Ran out of budget!';
+                } else if (result === 'lose-morale') {
+                    message = 'Game Over: Crew mutinied due to low morale!';
+                } else if (result === 'lose-resources') {
+                    message = 'Game Over: Out of fuel or materials!';
+                } else if (result === 'lose-time') {
+                    message = 'Game Over: Winter set in before completion!';
+                }
+                eventDiv.innerHTML = `<p>${message}</p><button id="restart">Restart</button>`;
+                document.getElementById('advance-button').style.display = 'none';
+                document.getElementById('restart').onclick = resetGame;
+            }
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            updateUI();
+        }
+
+        function resetGame() {
+            location.reload(); // Simple reset
+        }
+
+        document.getElementById('start-button').onclick = startGame;
+        document.getElementById('advance-button').onclick = advanceDay;
+
+        // Stretch: Save/Load
+        function saveGame() {
+            localStorage.setItem('powerlineGame', JSON.stringify({
+                project: {
+                    progress: project.progress,
+                    days: project.days,
+                    stage: project.stage,
+                    currentStageIndex: project.currentStageIndex,
+                    resources: project.resources,
+                    weather: project.weather,
+                    terrain: project.terrain
+                }
+            }));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('powerlineGame');
+            if (saved) {
+                const data = JSON.parse(saved);
+                project.progress = data.project.progress;
+                project.days = data.project.days;
+                project.stage = data.project.stage;
+                project.currentStageIndex = data.project.currentStageIndex;
+                project.resources = data.project.resources;
+                project.weather = data.project.weather;
+                project.terrain = data.project.terrain;
+                updateUI();
+            }
+        }
+
+        // Call load on start
+        loadGame();
+
+        // Save on advance (for MVP, save every advance)
+        const originalAdvance = advanceDay;
+        advanceDay = () => {
+            originalAdvance();
+            saveGame();
+        };
+    </script>
+</body>
+</html>
